@@ -4,7 +4,7 @@ use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 entity top_module is
 	port (
-		i_Switch_1 : in STD_LOGIC;
+		i_Switch : in STD_LOGIC_VECTOR(1 downto 0);
 		i_Clk : in STD_LOGIC;
 		
 		o_LED : out STD_LOGIC;
@@ -19,8 +19,8 @@ architecture Behavioral of top_module is
 	
 -- SIGNALS
 	signal r_LED_1 : STD_LOGIC := '0';
-	signal r_Switch_1 : STD_LOGIC := '0';
-	signal w_Switch_1 : STD_LOGIC;
+	signal r_Switch : STD_LOGIC_VECTOR(1 downto 0) := "00";
+	signal w_Switch : STD_LOGIC_VECTOR(1 downto 0);
 	
 -- SIGNALS button counter
 	signal r_SwitchBCDcnt : STD_LOGIC_VECTOR(11 downto 0) := "000000000000";
@@ -32,12 +32,18 @@ architecture Behavioral of top_module is
 	
 begin
 	-- Instantiate Debounce Filter
-	Debounce_Inst : entity work.DebounceSwitch
+	Debounce_Inst_1 : entity work.DebounceSwitch
 		port map (
 			i_Clk    => i_Clk,
-			i_Switch => i_Switch_1,
-			o_Switch => w_Switch_1);
+			i_Switch => i_Switch(0),
+			o_Switch => w_Switch(0));
 	
+	Debounce_Inst_2 : entity work.DebounceSwitch
+		port map (
+			i_Clk    => i_Clk,
+			i_Switch => i_Switch(1),
+			o_Switch => w_Switch(1));
+			
 	-- Instantiate BCD to 7SEG
 	BCDToSegment_Inst : entity work.BCDToSegment
 		port map (
@@ -49,10 +55,10 @@ begin
 		if rising_edge(i_Clk) then
 			-- na narastajace zbocze zegara
 			-- LED ma zmienic stan na puszczenie przycisku
-			r_Switch_1 <= not(w_Switch_1);
+			r_Switch <= not(w_Switch);
 			
-			-- przycisk zostal puszczony
-			if r_Switch_1 = '1' and not(w_Switch_1) = '0' then
+			-- przycisk 1 zostal puszczony
+			if r_Switch(0) = '1' and not(w_Switch(0)) = '0' then
 				-- zmiana stanu LED
 				r_LED_1 <= not r_LED_1;
 				
@@ -72,6 +78,11 @@ begin
 						end if;
 					end if;
 				end if;
+			end if;
+			
+			-- przycisk 2 zostal puszczony
+			if r_Switch(1) = '1' and not(w_Switch(1)) = '0' then
+				r_SwitchBCDcnt(11 downto 0) <= "000000000000";
 			end if;
 		end if;
 	end process p_Register;
